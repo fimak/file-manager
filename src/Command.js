@@ -1,5 +1,7 @@
+import fs from 'node:fs/promises';
 import os from 'node:os';
 import process from 'node:process';
+import path from 'node:path';
 import Log from './Log.js';
 
 class Command {
@@ -7,13 +9,14 @@ class Command {
     this.rl = readline;
     this.currentDir = os.homedir();
     this.log = new Log();
-    this.log.default(`You are currently in ${this.currentDir}`);
+    this.log.success(`You are currently in ${this.currentDir}`);
   }
 
   async prompt() {
     try {
       const input = await this.rl.question('\nEnter a command: ');
       await this.process(input);
+      this.log.success(`You are currently in: ${this.currentDir}`);
 
       await this.prompt();
     } catch (error) {
@@ -32,9 +35,10 @@ class Command {
         break;
       case 'cd':
         if (args.length === 1) {
-          this.cd(args[0]);
+          await this.cd(args[0]);
         } else {
-          console.log('Usage: cd <directory>');
+          this.log.error('Invalid input');
+          this.log.default('Usage: cd <directory>');
         }
         break;
       case 'ls':
@@ -49,16 +53,27 @@ class Command {
   }
 
   up() {
-    const parts = this.currentDir.split(os.platform() === 'win32' ? '\\' : '/');
-    if (parts.length > 1) {
-      parts.pop();
-      this.currentDir = parts.join(os.platform() === 'win32' ? '\\' : '/');
+    try {
+      const isWin32 = os.platform() === 'win32';
+      const parts = this.currentDir.split(isWin32 ? '\\' : '/');
+      if (isWin32 && parts.length > 4 || !isWin32 && parts.length > 3) {
+        parts.pop();
+        this.currentDir = parts.join(os.platform() === 'win32' ? '\\' : '/');
+      }
+    } catch(err) {
+      this.log.error('Operation failed');
     }
-    this.log.success(`Current directory: ${this.currentDir}`);
   }
 
-  cd(directory) {
-    this.log.success(`Changing directory to: ${directory}`);
+  async cd(directory) {
+    try {
+      const destination = directory.startsWith('/') ? directory : path.join(this.currentDir, directory);
+      await fs.access(destination);
+      console.log(destination);
+      this.currentDir = destination;
+    } catch(err) {
+      this.log.error('Operation failed');
+    }
   }
 
   ls() {
