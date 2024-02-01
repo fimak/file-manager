@@ -42,7 +42,7 @@ class Command {
         }
         break;
       case 'ls':
-        this.ls();
+        await this.ls();
         break;
       case '.exit':
         this.exit();
@@ -76,8 +76,31 @@ class Command {
     }
   }
 
-  ls() {
-    this.log.success('Listing files and folders:');
+  async ls() {
+    try {
+      const list = await fs.readdir(this.currentDir);
+      const statsPromises = list.map((file) => {
+        return new Promise(async (resolve, reject) => {
+          try {
+            const stat = await fs.stat(path.join(this.currentDir, file));
+            resolve({ name: file, type: stat.isDirectory() ? 'folder' : 'file' })
+          } catch (err) {
+            reject(err);
+          }
+        });
+      });
+      const data = await Promise.all(statsPromises);
+
+      data.sort((a, b) => {
+        if (a.type === b.type) {
+          return a.name.localeCompare(b.name, undefined, { sensitivity: 'base' });
+        }
+        return a.type === 'folder' ? -1 : 1;
+      });
+      console.table(data);
+    } catch(err) {
+      this.log.error('Operation failed');
+    }
   }
 
   exit() {
