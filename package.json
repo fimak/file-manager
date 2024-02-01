@@ -2,8 +2,13 @@
   "name": "file-manager",
   "version": "1.0.0",
   "description": "file-manager build on node.js",
+  "engines": {
+    "node": ">=20.0.0"
+  },
+  "type": "module",
   "main": "index.js",
   "scripts": {
+    "start": "node index.js",
     "test": "echo \"Error: no test specified\" && exit 1"
   },
   "repository": {
