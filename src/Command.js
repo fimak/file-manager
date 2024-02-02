@@ -2,10 +2,12 @@ import process from 'node:process';
 import readline from 'node:readline/promises';
 import FileSystem from './FileSystem.js';
 import Log from './Log.js';
+import OS from './OS.js';
 
 class Command {
   constructor() {
     this.fs = new FileSystem();
+    this.os = new OS();
     this.log = new Log();
     this.log.success(`You are currently in ${this.fs.currentDir}`);
   }
@@ -99,6 +101,9 @@ class Command {
           this.log.error('Invalid input');
           this.log.default('Usage: rename <filePath>');
         }
+        break;
+      case 'os':
+        await this.os.command(args[0]);
         break;
       case '.exit':
         this.exit();
