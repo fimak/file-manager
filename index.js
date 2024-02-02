@@ -1,18 +1,11 @@
-import readline from 'node:readline/promises';
-import process from 'node:process';
 import Auth from './src/Auth.js';
 import Command from './src/Command.js';
 
 const main = async () => {
-  const rl = readline.createInterface({
-    input: process.stdin,
-    output: process.stdout,
-  });
-
-  const auth = new Auth(rl);
+  const auth = new Auth();
   await auth.start();
 
-  const command = new Command(rl);
+  const command = new Command();
   await command.prompt();
 }
 
