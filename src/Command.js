@@ -1,5 +1,7 @@
+import path from 'node:path';
 import process from 'node:process';
 import readline from 'node:readline/promises';
+import Crypto from './Crypto.js';
 import FileSystem from './FileSystem.js';
 import Log from './Log.js';
 import OS from './OS.js';
@@ -8,6 +10,7 @@ class Command {
   constructor() {
     this.fs = new FileSystem();
     this.os = new OS();
+    this.crypto = new Crypto();
     this.log = new Log();
     this.log.success(`You are currently in ${this.fs.currentDir}`);
   }
@@ -104,6 +107,14 @@ class Command {
         break;
       case 'os':
         await this.os.command(args[0]);
+        break;
+      case 'hash':
+        if (args.length === 1) {
+          await this.crypto.hash(path.join(this.fs.currentDir, args[0]));
+        } else {
+          this.log.error('Invalid input');
+          this.log.default('Usage: hash <filePath>');
+        }
         break;
       case '.exit':
         this.exit();
