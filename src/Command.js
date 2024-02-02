@@ -1,16 +1,13 @@
-import fs from 'node:fs/promises';
-import { createReadStream } from 'node:fs';
-import os from 'node:os';
 import process from 'node:process';
-import path from 'node:path';
 import readline from 'node:readline/promises';
+import FileSystem from './FileSystem.js';
 import Log from './Log.js';
 
 class Command {
   constructor() {
-    this.currentDir = os.homedir();
+    this.fs = new FileSystem();
     this.log = new Log();
-    this.log.success(`You are currently in ${this.currentDir}`);
+    this.log.success(`You are currently in ${this.fs.currentDir}`);
   }
 
   async prompt() {
@@ -23,7 +20,7 @@ class Command {
       this.rl.close();
 
       await this.process(input);
-      this.log.success(`You are currently in: ${this.currentDir}`);
+      this.log.success(`You are currently in: ${this.fs.currentDir}`);
 
       await this.prompt();
     } catch (error) {
@@ -42,22 +39,22 @@ class Command {
 
     switch (cmd) {
       case 'up':
-        this.up();
+        this.fs.up();
         break;
       case 'cd':
         if (args.length === 1) {
-          await this.cd(args[0]);
+          await this.fs.cd(args[0]);
         } else {
           this.log.error('Invalid input');
           this.log.default('Usage: cd <directory>');
         }
         break;
       case 'ls':
-        await this.ls();
+        await this.fs.ls();
         break;
       case 'cat':
         if (args.length === 1) {
-          await this.cat(args[0]);
+          await this.fs.cat(args[0]);
         } else {
           this.log.error('Invalid input');
           this.log.default('Usage: cat <filePath>');
@@ -65,7 +62,7 @@ class Command {
         break;
       case 'add':
         if (args.length === 1) {
-          await this.add(args[0]);
+          await this.fs.add(args[0]);
         } else {
           this.log.error('Invalid input');
           this.log.default('Usage: add <fileName>');
@@ -73,7 +70,7 @@ class Command {
         break;
       case 'rn':
         if (args.length === 2) {
-          await this.rename(args[0], args[1]);
+          await this.fs.rename(args[0], args[1]);
         } else {
           this.log.error('Invalid input');
           this.log.default('Usage: rn <oldFilePath> <newFilePath>');
@@ -81,7 +78,7 @@ class Command {
         break;
       case 'cp':
         if (args.length === 2) {
-          await this.copy(args[0], args[1]);
+          await this.fs.copy(args[0], args[1]);
         } else {
           this.log.error('Invalid input');
           this.log.default('Usage: rename <filePath> <newFilePath>');
@@ -89,7 +86,7 @@ class Command {
         break;
       case 'mv':
         if (args.length === 2) {
-          await this.rename(args[0], args[1]);
+          await this.fs.rename(args[0], args[1]);
         } else {
           this.log.error('Invalid input');
           this.log.default('Usage: mv <oldFilePath> <newFilePath>');
@@ -97,7 +94,7 @@ class Command {
         break;
       case 'rm':
         if (args.length === 1) {
-          await this.remove(args[0]);
+          await this.fs.remove(args[0]);
         } else {
           this.log.error('Invalid input');
           this.log.default('Usage: rename <filePath>');
@@ -108,111 +105,6 @@ class Command {
         break;
       default:
         this.log.error('Invalid input');
-    }
-  }
-
-  up() {
-    try {
-      const isWin32 = os.platform() === 'win32';
-      const parts = this.currentDir.split(isWin32 ? '\\' : '/');
-      if (isWin32 && parts.length > 4 || !isWin32 && parts.length > 3) {
-        parts.pop();
-        this.currentDir = parts.join(os.platform() === 'win32' ? '\\' : '/');
-      }
-    } catch(err) {
-      this.log.error('Operation failed');
-    }
-  }
-
-  async cd(directory) {
-    try {
-      const destination = directory.startsWith('/') ? directory : path.join(this.currentDir, directory);
-      await fs.access(destination);
-      console.log(destination);
-      this.currentDir = destination;
-    } catch(err) {
-      this.log.error('Operation failed');
-    }
-  }
-
-  async ls() {
-    try {
-      const list = await fs.readdir(this.currentDir);
-      const statsPromises = list.map((file) => {
-        return new Promise(async (resolve, reject) => {
-          try {
-            const stat = await fs.stat(path.join(this.currentDir, file));
-            resolve({ name: file, type: stat.isDirectory() ? 'folder' : 'file' })
-          } catch (err) {
-            reject(err);
-          }
-        });
-      });
-      const data = await Promise.all(statsPromises);
-
-      data.sort((a, b) => {
-        if (a.type === b.type) {
-          return a.name.localeCompare(b.name, undefined, { sensitivity: 'base' });
-        }
-        return a.type === 'folder' ? -1 : 1;
-      });
-      console.table(data);
-    } catch(err) {
-      this.log.error('Operation failed');
-    }
-  }
-
-  async cat(filePath) {
-    try {
-      // todo: find why the following code throw exception
-      // await pipeline(
-      //   createReadStream(path.join(this.currentDir, filePath)),
-      //   process.stdout,
-      // )
-      const readStream = createReadStream(path.join(this.currentDir, filePath));
-      readStream.pipe(process.stdout);
-      await new Promise((resolve, reject) => {
-        readStream.on('end', resolve);
-        readStream.on('error', reject);
-      });
-    } catch(err) {
-      this.log.error('Operation failed');
-    }
-  }
-
-  async add(filePath) {
-    try {
-      await fs.writeFile(path.join(this.currentDir, filePath), '');
-      this.log.success(`File ${filePath} successfully created!`);
-    } catch(err) {
-      this.log.error('Operation failed');
-    }
-  }
-
-  async rename(oldFilePath, newFilePath) {
-    try {
-      await fs.rename(path.join(this.currentDir, oldFilePath), path.join(this.currentDir, newFilePath));
-      this.log.success(`File ${oldFilePath} moved to ${newFilePath}!`);
-    } catch(err) {
-      this.log.error('Operation failed');
-    }
-  }
-
-  async copy(filePath, newFilePath) {
-    try {
-      await fs.copyFile(path.join(this.currentDir, filePath), path.join(this.currentDir, newFilePath));
-      this.log.success(`File ${filePath} copied to ${newFilePath}!`);
-    } catch(err) {
-      this.log.error('Operation failed');
-    }
-  }
-
-  async remove(filePath) {
-    try {
-      await fs.unlink(path.join(this.currentDir, filePath));
-      this.log.success(`File ${filePath} has been removed!`);
-    } catch(err) {
-      this.log.error('Operation failed');
     }
   }
 
