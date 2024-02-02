@@ -5,12 +5,14 @@ import Crypto from './Crypto.js';
 import FileSystem from './FileSystem.js';
 import Log from './Log.js';
 import OS from './OS.js';
+import Zip from './Zip.js';
 
 class Command {
   constructor() {
     this.fs = new FileSystem();
     this.os = new OS();
     this.crypto = new Crypto();
+    this.zip = new Zip();
     this.log = new Log();
     this.log.success(`You are currently in ${this.fs.currentDir}`);
   }
@@ -114,6 +116,22 @@ class Command {
         } else {
           this.log.error('Invalid input');
           this.log.default('Usage: hash <filePath>');
+        }
+        break;
+      case 'compress':
+        if (args.length === 2) {
+          await this.zip.compress(path.join(this.fs.currentDir, args[0]), path.join(this.fs.currentDir, args[1]));
+        } else {
+          this.log.error('Invalid input');
+          this.log.default('Usage: mv <filePath> <newFilePath>');
+        }
+        break;
+      case 'decompress':
+        if (args.length === 2) {
+          await this.zip.decompress(path.join(this.fs.currentDir, args[0]), path.join(this.fs.currentDir, args[1]));
+        } else {
+          this.log.error('Invalid input');
+          this.log.default('Usage: mv <filePath> <newFilePath>');
         }
         break;
       case '.exit':

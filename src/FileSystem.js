@@ -27,7 +27,7 @@ class FileSystem {
     try {
       const destination = directory.startsWith('/') ? directory : path.join(this.currentDir, directory);
       await fs.access(destination);
-      console.log(destination);
+      this.log.default(destination);
       this.currentDir = destination;
     } catch(err) {
       this.log.error('Operation failed');
